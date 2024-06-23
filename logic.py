@@ -2,10 +2,9 @@ import random
 import requests
 import time
 from telebot import TeleBot, types
-from config import token  # Assuming you have a 'config.py' file with your bot token
-
+from config import token  
 bot = TeleBot(token)
-admin_ids = [1845730851]  # Replace with your actual admin IDs
+admin_ids = [1845730851] 
 
 class Trainer:
     def __init__(self, username):
@@ -38,6 +37,7 @@ class Trainer:
                 self.experience -= pokemon.evolution_experience
                 bot.send_message(self.username, f"{pokemon.name} эволюционировал!")
                 break
+
 
 class Pokemon:
     def __init__(self, trainer, pokemon_type):
@@ -150,8 +150,8 @@ class Pokemon:
                 self.evolution_experience = 2000
                 self.max_level = 10
                 self.crit_chance = 0.1
-            self.health = self.max_health
-            self.level = self.max_level
+                self.health = self.max_health
+                self.level = self.max_level
             return True
         return False
 
@@ -174,13 +174,16 @@ class Pokemon:
     def stun_reset(self):
         self.stunned = False
 
+
 class Wizerd(Pokemon):
     def __init__(self, trainer):
         super().__init__(trainer, "Визерд")
 
+
 class Boez(Pokemon):
     def __init__(self, trainer):
         super().__init__(trainer, "Боец")
+
 
 trainers = {}
 START = 0
@@ -188,6 +191,7 @@ FIGHT_MENU = 1
 COOLDOWN_TIME = 1800
 FIGHT_DATA = {}
 current_turn = None
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -198,6 +202,7 @@ def start(message):
         trainers[username] = Trainer(username)
         bot.send_message(message.chat.id, f"Привет, {username}! Добро пожаловать в мир покемонов!")
         bot.send_message(message.chat.id, "Чтобы создать своего первого покемона, используй команду /go")
+
 
 @bot.message_handler(commands=['go'])
 def go(message):
@@ -219,6 +224,7 @@ def go(message):
     else:
         bot.reply_to(message, "Сначала начни игру, используя /start")
 
+
 @bot.message_handler(commands=['switch'])
 def switch_pokemon(message):
     username = message.from_user.username
@@ -235,6 +241,7 @@ def switch_pokemon(message):
     else:
         bot.send_message(message.chat.id, "У тебя только один покемон.")
 
+
 @bot.message_handler(commands=['show'])
 def show_pokemons(message):
     username = message.from_user.username
@@ -244,6 +251,7 @@ def show_pokemons(message):
         bot.send_message(message.chat.id, f"Твои покемоны:\n{pokemon_list}")
     else:
         bot.send_message(message.chat.id, "У тебя ещё нет покемонов.")
+
 
 @bot.message_handler(commands=['heal'])
 def heal_pokemon(message):
@@ -261,6 +269,7 @@ def heal_pokemon(message):
     else:
         bot.send_message(message.chat.id, "У тебя ещё нет покемонов.")
 
+
 @bot.message_handler(commands=['fight'])
 def fight(message):
     username = message.from_user.username
@@ -274,17 +283,21 @@ def fight(message):
                     my_pokemon = trainer.get_current_pokemon()
                     opponent_pokemon = opponent_trainer.get_current_pokemon()
                     bot.send_message(message.chat.id, f"{my_pokemon.name} против {opponent_pokemon.name}! Начинается бой!")
-                    FIGHT_DATA[username] = {'opponent_username': opponent_username, 'my_pokemon': my_pokemon, 'opponent_pokemon': opponent_pokemon, 'round': 1}
-                    FIGHT_DATA[opponent_username] = {'opponent_username': username, 'my_pokemon': opponent_pokemon, 'opponent_pokemon': my_pokemon, 'round': 1}
+                    FIGHT_DATA[username] = {
+                        'opponent_username': opponent_username,
+                        'my_pokemon': my_pokemon,
+                        'opponent_pokemon': opponent_pokemon,
+                        'round': 1
+                    }
+                    FIGHT_DATA[opponent_username] = {
+                        'opponent_username': username,
+                        'my_pokemon': opponent_pokemon,
+                        'opponent_pokemon': my_pokemon,
+                        'round': 1
+                    }
                     global current_turn
                     current_turn = username
-                    bot.send_message(current_turn, f"{FIGHT_DATA[current_turn]['round']} раунд.\n\n"
-                                        f"Ход {trainer.get_current_pokemon().name}. Выберите действие:\n"
-                                        f"1. Атака 1\n"
-                                        f"2. Атака 2\n"
-                                        f"3. Замена (сменить покемона)\n"
-                                        f"4. Убежать (шанс сбежать 1/3)\n"
-                                        f"5. Излечить (доступно раз в 3 минуты)")
+                    send_fight_menu(username, FIGHT_DATA[username], 1)
                     bot.set_state(message.chat.id, FIGHT_MENU, message.chat.id)
                     bot.set_state(opponent_trainer.username, FIGHT_MENU, opponent_trainer.username)
                 else:
@@ -295,6 +308,19 @@ def fight(message):
             bot.send_message(message.chat.id, "Неверный формат команды. Используйте /fight @[username].")
     else:
         bot.send_message(message.chat.id, "Сначала создай покемона!")
+
+
+def send_fight_menu(username, data, round_number):
+    """Отправляет меню боя в чат игрока."""
+    my_pokemon = data['my_pokemon']
+    bot.send_message(username, f"{round_number} раунд.\n\n"
+                          f"Ход {my_pokemon.name}. Выберите действие:\n"
+                          f"1. Атака 1\n"
+                          f"2. Атака 2\n"
+                          f"3. Замена (сменить покемона)\n"
+                          f"4. Убежать (шанс сбежать 1/3)\n"
+                          f"5. Излечить (доступно раз в 3 минуты)")
+
 
 @bot.message_handler(func=lambda message: bot.get_state(message.chat.id) == FIGHT_MENU, state=FIGHT_MENU)
 def handle_fight_action(message):
@@ -309,44 +335,44 @@ def handle_fight_action(message):
         if action == 1:
             damage = my_pokemon.attack(opponent_pokemon)
             bot.send_message(username, f"{round_number} раунд.\n\n"
-                                f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 1 и нанес {damage} урона.\n"
-                                f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
-                                f"Ход {opponent_pokemon.name}.")
+                              f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 1 и нанес {damage} урона.\n"
+                              f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
+                              f"Ход {opponent_pokemon.name}.")
             bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 1 и нанес {damage} урона.\n"
-                                    f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
+                              f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 1 и нанес {damage} урона.\n"
+                              f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
         elif action == 2:
             if my_pokemon.pokemon_type == "Визерд":
                 my_pokemon.use_magic_ball()
                 damage = my_pokemon.attack(opponent_pokemon)
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
-                                    f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
-                                    f"Ход {opponent_pokemon.name}.")
+                                  f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
+                                  f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
+                                  f"Ход {opponent_pokemon.name}.")
                 bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
-                                        f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
+                                  f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
+                                  f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
             elif my_pokemon.pokemon_type == "Боец":
                 if "Мощный Удар" in my_pokemon.abilities:
                     my_pokemon.power *= 2
                     damage = my_pokemon.attack(opponent_pokemon)
                     my_pokemon.power //= 2
                     bot.send_message(username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} использовал Мощный Удар! Атака 2 нанесла {damage} урона.\n"
-                                        f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
-                                        f"Ход {opponent_pokemon.name}.")
+                                      f"{my_pokemon.name} использовал Мощный Удар! Атака 2 нанесла {damage} урона.\n"
+                                      f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
+                                      f"Ход {opponent_pokemon.name}.")
                     bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                            f"{my_pokemon.name} использовал Мощный Удар! Атака 2 нанесла {damage} урона.\n"
-                                            f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
+                                      f"{my_pokemon.name} использовал Мощный Удар! Атака 2 нанесла {damage} урона.\n"
+                                      f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
                 else:
                     damage = my_pokemon.attack(opponent_pokemon)
                     bot.send_message(username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
-                                        f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
-                                        f"Ход {opponent_pokemon.name}.")
+                                      f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
+                                      f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.\n\n"
+                                      f"Ход {opponent_pokemon.name}.")
                     bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                            f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
-                                            f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
+                                      f"{my_pokemon.name} атаковал {opponent_pokemon.name} атакой 2 и нанес {damage} урона.\n"
+                                      f"У {opponent_pokemon.name} осталось {opponent_pokemon.health} ХП.")
         elif action == 3:
             trainer = trainers[username]
             if len(trainer.pokemons) > 1:
@@ -359,83 +385,76 @@ def handle_fight_action(message):
         elif action == 4:
             if random.randint(1, 3) == 1:
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} успешно сбежал!")
+                                  f"{my_pokemon.name} успешно сбежал!")
                 bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} сбежал!")
+                                  f"{my_pokemon.name} сбежал!")
                 bot.delete_state(username)
                 bot.delete_state(opponent_username)
                 return
             else:
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} не смог сбежать!")
+                                  f"{my_pokemon.name} не смог сбежать!")
                 bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} не смог сбежать!")
+                                  f"{my_pokemon.name} не смог сбежать!")
         elif action == 5:
             if time.time() - my_pokemon.last_heal_time < COOLDOWN_TIME:
                 remaining_time = COOLDOWN_TIME - (time.time() - my_pokemon.last_heal_time)
                 minutes, seconds = divmod(int(remaining_time), 60)
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"Подожди {minutes} минут {seconds} секунд, чтобы излечить покемона снова.")
+                                  f"Подожди {minutes} минут {seconds} секунд, чтобы излечить покемона снова.")
                 return
             else:
                 if my_pokemon.heal():
                     bot.send_message(username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} излечен!")
+                                      f"{my_pokemon.name} излечен!")
                     bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                            f"{my_pokemon.name} был излечен!")
+                                      f"{my_pokemon.name} был излечен!")
                 else:
                     bot.send_message(username, "Некорректный ввод. Введите число от 1 до 5.")
         if opponent_pokemon.health <= 0:
             bot.send_message(username, f"{round_number} раунд.\n\n"
-                                f"{opponent_pokemon.name} был побежден!")
+                              f"{opponent_pokemon.name} был побежден!")
             bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                    f"{opponent_pokemon.name} был побежден!")
+                              f"{opponent_pokemon.name} был побежден!")
             my_pokemon.trainer.gain_experience(50)
             if my_pokemon.trainer.experience >= my_pokemon.evolution_experience:
                 bot.send_message(username, f"{my_pokemon.name} эволюционировал!")
             bot.delete_state(username)
             bot.delete_state(opponent_username)
             return
-
         if my_pokemon.health > 0:
             if opponent_pokemon.stunned:
                 opponent_pokemon.stun_reset()
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"{opponent_pokemon.name} был оглушен и пропустил ход!")
+                                  f"{opponent_pokemon.name} был оглушен и пропустил ход!")
                 bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                        f"{opponent_pokemon.name} был оглушен и пропустил ход!")
+                                  f"{opponent_pokemon.name} был оглушен и пропустил ход!")
             else:
                 opponent_damage = opponent_pokemon.attack(my_pokemon)
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"{opponent_pokemon.name} атаковал {my_pokemon.name} и нанес {opponent_damage} урона.\n"
-                                    f"У {my_pokemon.name} осталось {my_pokemon.health} ХП.")
+                                  f"{opponent_pokemon.name} атаковал {my_pokemon.name} и нанес {opponent_damage} урона.\n"
+                                  f"У {my_pokemon.name} осталось {my_pokemon.health} ХП.")
                 bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                        f"{opponent_pokemon.name} атаковал {my_pokemon.name} и нанес {opponent_damage} урона.\n"
-                                        f"У {my_pokemon.name} осталось {my_pokemon.health} ХП.")
+                                  f"{opponent_pokemon.name} атаковал {my_pokemon.name} и нанес {opponent_damage} урона.\n"
+                                  f"У {my_pokemon.name} осталось {my_pokemon.health} ХП.")
             if my_pokemon.health <= 0:
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} был побежден!")
+                                  f"{my_pokemon.name} был побежден!")
                 bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} был побежден!")
+                                  f"{my_pokemon.name} был побежден!")
                 opponent_pokemon.trainer.gain_experience(50)
                 if opponent_pokemon.trainer.experience >= opponent_pokemon.evolution_experience:
                     bot.send_message(opponent_username, f"{opponent_pokemon.name} эволюционировал!")
                 bot.delete_state(username)
                 bot.delete_state(opponent_username)
                 return
-
         if username == current_turn:
             current_turn = opponent_username
             FIGHT_DATA[opponent_username]['round'] += 1
-            bot.send_message(current_turn, f"{FIGHT_DATA[current_turn]['round']} раунд.\n\n"
-                                f"Ход {trainers[current_turn].get_current_pokemon().name}. Выберите действие:\n"
-                                f"1. Атака 1\n"
-                                f"2. Атака 2\n"
-                                f"3. Замена (сменить покемона)\n"
-                                f"4. Убежать (шанс сбежать 1/3)\n"
-                                f"5. Излечить (доступно раз в 3 минуты)")
+            send_fight_menu(current_turn, FIGHT_DATA[current_turn], FIGHT_DATA[current_turn]['round'])
     except (ValueError, TypeError):
         bot.send_message(username, "Некорректный ввод. Введите число от 1 до 5.")
+
 
 @bot.message_handler(func=lambda message: bot.get_state(message.chat.id) == FIGHT_MENU and int(message.text) > 3 and int(message.text) < 6, state=FIGHT_MENU)
 def handle_fight_action_confirmation(message):
@@ -453,11 +472,13 @@ def handle_fight_action_confirmation(message):
                 if trainer.switch_pokemon(index):
                     my_pokemon = trainer.get_current_pokemon()
                     bot.send_message(username, f"{round_number} раунд.\n\n"
-                                        f"Вы сменили покемона на {my_pokemon.name}.\n\n"
-                                        f"Ход {my_pokemon.name}.")
+                                      f"Вы сменили покемона на {my_pokemon.name}.\n\n"
+                                      f"Ход {my_pokemon.name}.")
                     bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                            f"{username} сменил покемона на {my_pokemon.name}.\n\n"
-                                            f"Ход {my_pokemon.name}.")
+                                      f"{username} сменил покемона на {my_pokemon.name}.\n\n"
+                                      f"Ход {my_pokemon.name}.")
+                    FIGHT_DATA[username]['my_pokemon'] = my_pokemon
+                    FIGHT_DATA[opponent_username]['opponent_pokemon'] = my_pokemon
                 else:
                     bot.send_message(username, "Некорректный номер покемона.")
             except (IndexError, ValueError):
@@ -467,40 +488,35 @@ def handle_fight_action_confirmation(message):
     elif int(message.text) == 4:
         if random.randint(1, 3) == 1:
             bot.send_message(username, f"{round_number} раунд.\n\n"
-                                f"{my_pokemon.name} успешно сбежал!")
+                              f"{my_pokemon.name} успешно сбежал!")
             bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} сбежал!")
+                              f"{my_pokemon.name} сбежал!")
             bot.delete_state(username)
             bot.delete_state(opponent_username)
             return
         else:
             bot.send_message(username, f"{round_number} раунд.\n\n"
-                                f"{my_pokemon.name} не смог сбежать!")
+                              f"{my_pokemon.name} не смог сбежать!")
             bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} не смог сбежать!")
+                              f"{my_pokemon.name} не смог сбежать!")
     elif int(message.text) == 5:
         if time.time() - my_pokemon.last_heal_time < COOLDOWN_TIME:
             remaining_time = COOLDOWN_TIME - (time.time() - my_pokemon.last_heal_time)
             minutes, seconds = divmod(int(remaining_time), 60)
             bot.send_message(username, f"{round_number} раунд.\n\n"
-                                f"Подожди {minutes} минут {seconds} секунд, чтобы излечить покемона снова.")
+                              f"Подожди {minutes} минут {seconds} секунд, чтобы излечить покемона снова.")
             return
         else:
             if my_pokemon.heal():
                 bot.send_message(username, f"{round_number} раунд.\n\n"
-                                    f"{my_pokemon.name} излечен!")
+                                  f"{my_pokemon.name} излечен!")
                 bot.send_message(opponent_username, f"{round_number} раунд.\n\n"
-                                        f"{my_pokemon.name} был излечен!")
+                                  f"{my_pokemon.name} был излечен!")
         if username == current_turn:
             current_turn = opponent_username
             FIGHT_DATA[opponent_username]['round'] += 1
-            bot.send_message(current_turn, f"{FIGHT_DATA[current_turn]['round']} раунд.\n\n"
-                                f"Ход {trainers[current_turn].get_current_pokemon().name}. Выберите действие:\n"
-                                f"1. Атака 1\n"
-                                f"2. Атака 2\n"
-                                f"3. Замена (сменить покемона)\n"
-                                f"4. Убежать (шанс сбежать 1/3)\n"
-                                f"5. Излечить (доступно раз в 3 минуты)")
+            send_fight_menu(current_turn, FIGHT_DATA[current_turn], FIGHT_DATA[current_turn]['round'])
+
 
 @bot.message_handler(commands=['evolve'])
 def evolve_command(message):
@@ -522,4 +538,26 @@ def evolve_command(message):
     else:
         bot.send_message(message.chat.id, "У вас нет прав на эту команду.")
 
-bot.polling()
+
+@bot.message_handler(func=lambda message: True, content_types=['text', 'photo', 'audio', 'video', 'document'])
+def handle_default(message):
+    try:
+        if message.text.lower() == "/start":
+            start(message)
+        elif message.text.lower() == "/go":
+            go(message)
+        elif message.text.lower().startswith("/switch"):
+            switch_pokemon(message)
+        elif message.text.lower() == "/show":
+            show_pokemons(message)
+        elif message.text.lower() == "/heal":
+            heal_pokemon(message)
+        elif message.text.lower().startswith("/fight"):
+            fight(message)
+        elif message.text.lower().startswith("/evolve"):
+            evolve_command(message)
+        else:
+            bot.send_message(message.chat.id,
+                            "Неизвестная команда. Попробуйте /start, /go, /switch, /show, /heal, /fight, /evolve")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Произошла ошибка: {e}")
