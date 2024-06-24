@@ -8,7 +8,7 @@ from telebot import TeleBot, types
 from config import token
 
 bot = TeleBot(token)
-admin_ids = [1845730851]  
+admin_ids = [айди админестратора бота]  
 
 
 trainers = {}
